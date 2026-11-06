@@ -1,144 +1,437 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>🛡️ 산업안전보건 통합 관제 대시보드</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.58.0/build/stlite.css" />
-    <style>
-      body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      #root { height: 100vh; }
-      .loading-splash { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; color: #334155; }
-      .spinner { width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
-      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-  </head>
-  <body>
-    <div id="root">
-      <div class="loading-splash">
-        <div class="spinner"></div>
-        <h3 style="margin: 0 0 8px 0; font-size: 1.2rem; font-weight: 700;">산업안전보건 파이썬 대시보드 로딩 중...</h3>
-        <p style="margin: 0; font-size: 0.85rem; color: #64748b;">WebAssembly 파이썬 엔진을 브라우저에서 실행하고 있습니다.</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>신성이엔지 하이테크안전팀 | 안전보건 현장점검 종합관리 시스템</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pretendard", sans-serif; }
+    .excel-table { width: 100%; border-collapse: collapse; font-size: 11.5px; line-height: 1.35; }
+    .excel-table th, .excel-table td { border: 1px solid #cbd5e1; padding: 5px 7px; vertical-align: middle; }
+    .excel-th { background-color: #f1f5f9; font-weight: 700; color: #334155; text-align: center; }
+    @media print {
+      body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; color: #000000 !important; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always !important; break-before: page !important; }
+      @page { size: A4 portrait; margin: 10mm 12mm 10mm 12mm; }
+      .excel-table { font-size: 9pt !important; }
+      .excel-table th, .excel-table td { padding: 4px 5px !important; }
+    }
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 pb-12">
+
+  <!-- 상단 글로벌 바 (No-Print) -->
+  <header class="no-print bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xl text-white shadow">🛡️</div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base md:text-lg font-bold tracking-tight">㈜신성이엔지 하이테크안전팀</h1>
+            <span class="px-2 py-0.5 text-[11px] font-bold bg-blue-500/30 text-blue-300 rounded border border-blue-400/30">전사 30개 현장 관제</span>
+          </div>
+          <p class="text-xs text-slate-400">안전보건 현장점검 종합관리 시스템 | A4 인쇄 & 모바일 최적화</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div class="flex items-center bg-slate-800 rounded-lg border border-slate-700 px-2 py-1 text-xs">
+          <span class="text-slate-400 mr-2 font-semibold">📍 점검 현장:</span>
+          <select id="siteSelect" onchange="changeSite(this.value)" class="bg-transparent text-white font-bold outline-none cursor-pointer">
+            <option value="site_01" selected>1. 청주 SK하이닉스 P&T7 System Ceiling (기본데이터)</option>
+            <option value="site_02">2. 이천 SK하이닉스 M16 클린룸 배관공사</option>
+            <option value="site_03">3. 평택 삼성전자 P3 FAB 닥트설치공사</option>
+            <option value="site_04">4. 평택 삼성전자 P4 마감 및 시스템실링</option>
+            <option value="site_05">5. 화성 삼성전자 EUV 라인 기계설비공사</option>
+            <option value="site_06">6. 용인 반도체 클러스터 1공구 신축현장</option>
+            <option value="site_07">7. 기흥 NRD-K 연구동 클린룸 공사</option>
+            <option value="site_08">8. 온양 반도체 패키징 라인 보강공사</option>
+            <option value="site_09">9. 천안 삼성SDI 배터리 2공장 설치</option>
+            <option value="site_10">10. 오창 LG에너지솔루션 2공장 공조설비</option>
+          </select>
+        </div>
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow">
+          <span>🖨️</span> <span>A4 인쇄 / PDF 저장</span>
+        </button>
+        <button onclick="toggleWorkStop()" id="btnWorkStopToggle" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow">
+          <span>🚨</span> <span>Work Stop 상태 관리</span>
+        </button>
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.58.0/build/stlite.js"></script>
-    <script>
-      const pythonScript = `import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, date
+  </header>
 
-st.set_page_config(page_title="산업안전보건 통합 관제 대시보드", page_icon="🛡️", layout="wide")
+  <!-- 점검 주기 & 현장 요약 정보 바 -->
+  <section class="no-print max-w-7xl mx-auto px-4 pt-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+      <div>
+        <span class="text-slate-500 block font-medium">선택 현장 / 공사명</span>
+        <span id="summarySiteName" class="font-bold text-slate-800 text-sm">청주 SK하이닉스 P&T7 System Ceiling</span>
+      </div>
+      <div>
+        <span class="text-slate-500 block font-medium">점검 주기 / 차수</span>
+        <span id="summaryCycle" class="font-bold text-blue-700 text-sm">2개월 1회 (1차 점검완료)</span>
+        <span class="text-[11px] text-emerald-600 font-semibold ml-1">● 차기 점검: D-18일</span>
+      </div>
+      <div>
+        <span class="text-slate-500 block font-medium">법정 안전관리자 선임 현황</span>
+        <span id="summaryLegalStatus" class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+          ✓ 계약금액(58.4억) 기준 선임완료 (적합)
+        </span>
+      </div>
+      <div>
+        <span class="text-slate-500 block font-medium">위험성평가 이행률</span>
+        <div class="flex items-center gap-2 mt-0.5">
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div id="summaryRateBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 83.3%"></div>
+          </div>
+          <span id="summaryRateText" class="font-bold text-blue-700 text-sm">83.3%</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
-st.markdown("""
-<style>
-    .main-title { font-size: 2.1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.2rem; }
-    .sub-title { font-size: 0.95rem; color: #64748b; margin-bottom: 1.5rem; }
-    .metric-card { background: #ffffff; border-radius: 12px; padding: 1.2rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .metric-title { font-size: 0.82rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.4rem; }
-    .metric-value { font-size: 1.85rem; font-weight: 800; color: #0f172a; line-height: 1.2; }
-    .metric-sub { font-size: 0.8rem; color: #10b981; font-weight: 600; margin-top: 0.3rem; }
-</style>
-""", unsafe_allow_html=True)
+  <!-- 6개 시트 탭 네비게이션 -->
+  <nav class="no-print max-w-7xl mx-auto px-4 pt-4">
+    <div class="flex overflow-x-auto space-x-1 border-b border-slate-200 pb-1">
+      <button onclick="switchTab('sheet1')" id="tab-btn-sheet1" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap">📄 1. 요약보고서 (임원보고용)</button>
+      <button onclick="switchTab('sheet2')" id="tab-btn-sheet2" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">📋 2. 계약사항 및 선임확인</button>
+      <button onclick="switchTab('sheet3')" id="tab-btn-sheet3" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">⚠️ 3. 위험성평가 이행점검표</button>
+      <button onclick="switchTab('sheet4')" id="tab-btn-sheet4" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">🛑 4. Work Stop Notice</button>
+      <button onclick="switchTab('sheet5')" id="tab-btn-sheet5" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">📸 5. 개선조치 전·후 대조표</button>
+      <button onclick="switchTab('sheet6')" id="tab-btn-sheet6" class="sheet-tab-btn px-4 py-2 text-xs md:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">💡 6. 우수 개선사례</button>
+      <button onclick="showAllForPrint()" class="px-3 py-2 text-xs font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300 ml-auto whitespace-nowrap">전체 6개 시트 연속보기</button>
+    </div>
+  </nav>
 
-if "monthly_stats" not in st.session_state:
-    months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월"]
-    st.session_state.monthly_stats = pd.DataFrame({
-        "월": months,
-        "중대재해": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "경미사고(공상)": [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-        "아차사고(Near Miss)": [12, 14, 18, 15, 21, 19, 23, 20, 18, 16]
-    })
+  <!-- 메인 시트 컨테이너 -->
+  <main class="max-w-7xl mx-auto px-2 md:px-4 pt-4">
 
-if "recent_logs" not in st.session_state:
-    st.session_state.recent_logs = pd.DataFrame([
-        {"ID": "NM-2026-102", "날짜": "2026-10-24", "사업장": "울산 제1공장", "유형": "추락(위험)", "내용": "2층 배관 보수 작업 중 안전대 미체결 인지 후 즉시 교육", "조치상태": "조치완료"},
-        {"ID": "NM-2026-098", "날짜": "2026-10-18", "사업장": "평택 물류센터", "유형": "끼임/협착", "내용": "컨베이어 방호망 탈락 발견 및 인터록 점검", "조치상태": "조치완료"},
-        {"ID": "AC-2026-002", "날짜": "2026-05-11", "사업장": "여수 플랜트", "유형": "넘어짐/전도", "내용": "바닥 세척수 잔류로 인한 미끄러짐 (발목 염좌 치료)", "조치상태": "조치완료"}
-    ])
+    <!-- SHEET 1: 현장 점검결과 요약보고서 -->
+    <div id="sheet1" class="sheet-view bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div class="border-b-2 border-slate-900 pb-2 mb-3 flex flex-col md:flex-row justify-between items-start md:items-end">
+        <div>
+          <span class="text-[11px] font-extrabold text-blue-700 uppercase">SHIN SUNG E&G HIGH-TECH SAFETY TEAM</span>
+          <h2 class="text-xl md:text-2xl font-black text-slate-900">현장 점검결과 요약보고서</h2>
+        </div>
+        <div class="text-xs text-slate-600 mt-1 md:mt-0 text-right">
+          <span id="s1_header_sub" class="font-bold">청주 SK하이닉스 P&T7 신축 PJT System Ceiling 설치공사</span><br>
+          <span class="text-slate-500">㈜신성이엔지 하이테크안전팀 | 보고일자: 2026.10.20</span>
+        </div>
+      </div>
 
-with st.sidebar:
-    st.title("안전보건 관제센터")
-    selected_site = st.selectbox("🏢 대상 사업장", ["전체 사업장", "울산 제1제조공장", "여수 석유화학플랜트", "평택 스마트물류센터", "본사 연구소"])
-    st.markdown("---")
-    st.markdown("### 🎯 무재해 목표")
-    st.progress(348 / 500)
-    st.caption("현재 **348일 달성** / 목표 500일 (D-152)")
+      <!-- 1. 현장 개요 -->
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">■ 1. 현장 개요</div>
+        <div class="table-responsive">
+          <table class="excel-table">
+            <colgroup><col style="width: 13%;"><col style="width: 20%;"><col style="width: 13%;"><col style="width: 20%;"><col style="width: 14%;"><col style="width: 20%;"></colgroup>
+            <tbody>
+              <tr><td class="excel-th">발주처</td><td>SK 하이닉스</td><td class="excel-th">원사업자</td><td>SK 에코플랜트</td><td class="excel-th">수급사업자</td><td class="font-bold text-blue-800">㈜신성이엔지</td></tr>
+              <tr><td class="excel-th">하도급공사명</td><td colspan="3" class="font-semibold">P&T7 신축 PJT System Ceiling 설치공사</td><td class="excel-th">주공정</td><td>System Ceiling (매립 INSERT)</td></tr>
+              <tr><td class="excel-th">공사기간</td><td>2026.07.27 ~ 2027.06.30</td><td class="excel-th">소재지</td><td>충북 청주시 (SK하이닉스 청주캠퍼스)</td><td class="excel-th">협력사명</td><td>에이스크린텍 / 제이에스엠이엔지</td></tr>
+              <tr><td class="excel-th">계약금액(VAT포함)</td><td class="font-bold text-slate-800">5,840,000,000원</td><td class="excel-th">안전관리비</td><td>146,000,000원 (정상집행)</td><td class="excel-th">계약번호</td><td class="font-mono">2026-5-1251</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-st.markdown('<div class="main-title">🛡️ 전사 산업안전보건 종합 관제 대시보드</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="sub-title">조회기준: <b>{selected_site}</b> | 중대재해처벌법 및 산업안전보건법 준수 모니터링</div>', unsafe_allow_html=True)
+      <!-- 2. 점검 현황 -->
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">■ 2. 점검 현황 (차수별 비교)</div>
+        <div class="table-responsive">
+          <table class="excel-table text-center">
+            <thead>
+              <tr class="excel-th"><th>구분</th><th>점검일</th><th>점검자</th><th>공정률</th><th>출력인원(관리/작업)</th><th>위험요인 수</th><th>고위험(상)</th><th>Work Stop</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="font-bold bg-blue-50 text-blue-800">1차 점검</td><td>2026-10-20</td><td class="font-semibold">김장성 이사, 이경희 대리</td><td>0% (INSERT 4%)</td><td>7명 / 5명 (총 12명)</td><td class="font-bold">6건</td><td class="font-bold text-rose-600">2건</td><td><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">해당없음</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-col1, col2, col3, col4, col5 = st.columns(5)
-with col1:
-    st.markdown('<div class="metric-card"><div class="metric-title">무재해 달성 일수</div><div class="metric-value">348일</div><div class="metric-sub">목표 500일 (D-152)</div></div>', unsafe_allow_html=True)
-with col2:
-    st.markdown('<div class="metric-card"><div class="metric-title">중대재해 건수</div><div class="metric-value" style="color: #10b981;">0건</div><div class="metric-sub">Zero 지속 유지</div></div>', unsafe_allow_html=True)
-with col3:
-    st.markdown('<div class="metric-card"><div class="metric-title">경미사고(공상)</div><div class="metric-value">2건</div><div class="metric-sub">전년비 ▼ 60%</div></div>', unsafe_allow_html=True)
-with col4:
-    st.markdown('<div class="metric-card"><div class="metric-title">아차사고 발굴</div><div class="metric-value" style="color: #3b82f6;">176건</div><div class="metric-sub">보고율 ▲ 38%</div></div>', unsafe_allow_html=True)
-with col5:
-    st.markdown('<div class="metric-card"><div class="metric-title">시정조치 완료율</div><div class="metric-value">97.8%</div><div class="metric-sub">296/303건 완료</div></div>', unsafe_allow_html=True)
+      <!-- 3. 위험성평가 이행점검 결과 총괄 -->
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">■ 3. 위험성평가 이행점검 결과 총괄</div>
+        <div class="table-responsive mb-2">
+          <table class="excel-table text-center">
+            <thead>
+              <tr class="excel-th"><th>총 위험요인</th><th>위험수준 (상)</th><th>위험수준 (중)</th><th>이행 완료</th><th>개선 필요</th><th>전체 이행률</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="font-bold">6건</td><td class="font-bold text-rose-600">2건</td><td class="font-bold text-amber-600">2건</td><td class="font-bold text-emerald-600">5건</td><td class="font-bold text-amber-600">1건</td><td class="font-black text-blue-700 bg-blue-50 text-sm">83.3%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-responsive">
+          <table class="excel-table text-center">
+            <thead>
+              <tr class="excel-th"><th>재해유형</th><th>추락</th><th>감전</th><th>낙하</th><th>비래</th><th>전도</th><th>기타 (베임/분진/진동)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="excel-th">건수</td><td class="font-bold text-rose-600">1건</td><td>0건</td><td class="font-bold text-rose-600">1건</td><td class="font-bold text-amber-600">1건</td><td>0건</td><td class="font-bold text-slate-700">3건</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-st.markdown("<br>", unsafe_allow_html=True)
+      <!-- 4. 주요 지적사항 및 조치 현황 -->
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">■ 4. 주요 지적사항 및 조치 현황</div>
+        <div class="table-responsive">
+          <table class="excel-table">
+            <colgroup><col style="width: 20%;"><col style="width: 20%;"><col style="width: 30%;"><col style="width: 30%;"></colgroup>
+            <thead><tr class="excel-th"><th>구분</th><th>위치 / 대상</th><th>지적 내용</th><th>조치 요구 및 결과</th></tr></thead>
+            <tbody>
+              <tr><td class="font-bold text-center bg-rose-50 text-rose-700">WORK STOP</td><td class="text-center">[10.20 점검]</td><td colspan="2" class="text-center text-slate-500 py-2"><b>해당 없음</b> (작업중지 해당사항 없음 - 안전수칙 준수 양호)</td></tr>
+              <tr><td class="font-bold text-center bg-amber-50 text-amber-800">개선조치 요청</td><td class="text-center">매립 INSERT 타공구간</td><td>① 보안경 미착용 상태 작업 발견<br>② 안전대 안전고리 교차체결 미흡</td><td class="text-blue-900 font-medium">① 즉시 착용 지시 후 작업 재개 완료<br>② 2중 고리 교차체결 즉시 시정 완료</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-tab1, tab2, tab3, tab4 = st.tabs(["📊 안전 통계 분석", "⚠️ 위험성평가 5×5", "⚖️ 중대재해처벌법 준수", "✍️ 아차사고 신규 등록"])
+      <!-- 5. 종합의견 -->
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">■ 5. 종합의견 및 향후 조치계획</div>
+        <div class="p-3 bg-slate-50 border border-slate-300 rounded text-xs space-y-1.5 text-slate-800 leading-relaxed">
+          <p>• <b>TBM 점검</b>: 안전화, 안전벨트(카라비너), 안전모 인증제품 여부 전수 확인 완료. 고용노동부 기본수칙 집중점검(3+1) 내용 현장 전파 완료.</p>
+          <p>• <b>1차 점검 결과 총평</b>: 점검 대상 위험요인 총 6건 중 <b>5건 이행 완료</b>, <b>개선 필요 1건</b>(보안경 미착용 - 즉시 시정 조치)으로 <b>전체 이행률 83.3%</b> 기록.</p>
+          <p class="text-blue-800 font-semibold">• <b>허수영 현장소장 인터뷰</b>: "신규 근로자 사전 선별 희망 - 현장 투입 전에 간단한 안전의식 면담이나 사전 테스트를 통해 위험 대응 성향을 미리 확인하고 교육 후 투입하고자 함."</p>
+        </div>
+      </div>
 
-with tab1:
-    c1, c2 = st.columns([7, 5])
-    with c1:
-        st.subheader("월별 사고 및 아차사고 발굴 추이")
-        df_m = st.session_state.monthly_stats
-        fig_t = go.Figure()
-        fig_t.add_trace(go.Bar(x=df_m["월"], y=df_m["아차사고(Near Miss)"], name="아차사고 발굴", marker_color="#60a5fa"))
-        fig_t.add_trace(go.Scatter(x=df_m["월"], y=df_m["경미사고(공상)"], name="경미사고", mode="lines+markers", line=dict(color="#f43f5e", width=3)))
-        fig_t.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10))
-        st.plotly_chart(fig_t, use_container_width=True)
-    with c2:
-        st.subheader("위험 유형별 비율")
-        haz_df = pd.DataFrame({"유형": ["끼임/협착", "추락", "넘어짐", "낙하물", "충돌", "기타"], "건수": [42, 38, 31, 28, 19, 18]})
-        fig_d = px.pie(haz_df, values="건수", names="유형", hole=0.55)
-        fig_d.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10))
-        st.plotly_chart(fig_d, use_container_width=True)
+      <!-- 6. 결재 서명란 -->
+      <div class="pt-2 flex justify-end">
+        <table class="border border-slate-400 text-xs text-center">
+          <tr>
+            <td class="excel-th w-20 py-1 border border-slate-400">작성자</td>
+            <td class="w-32 py-1 border border-slate-400 font-semibold">하이테크안전팀</td>
+            <td class="excel-th w-20 py-1 border border-slate-400">확인자</td>
+            <td class="w-36 py-1 border border-slate-400 font-bold text-blue-900 flex items-center justify-center gap-1">
+              <span>김장성 이사</span>
+              <span class="text-[10px] text-emerald-700 border border-emerald-400 px-1 rounded bg-emerald-50">전자서명완료</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
 
-with tab2:
-    st.subheader("위험성평가 (5×5 Matrix)")
-    m_data = np.zeros((5, 5))
-    for r in range(5):
-        for c in range(5):
-            m_data[r, c] = (5 - r) * (c + 1)
-    fig_mat = px.imshow(m_data, x=["1(극소)", "2(경미)", "3(보통)", "4(중대)", "5(치명)"], y=["5(매우높음)", "4(높음)", "3(보통)", "2(낮음)", "1(매우낮음)"], labels=dict(x="강도", y="빈도"), color_continuous_scale=[(0.0, "#22c55e"), (0.28, "#facc15"), (0.60, "#ef4444"), (1.0, "#991b1b")], text_auto=True)
-    fig_mat.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20), coloraxis_showscale=False)
-    st.plotly_chart(fig_mat, use_container_width=True)
+    <!-- SHEET 2: 계약사항 및 선임확인 -->
+    <div id="sheet2" class="sheet-view hidden bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div class="border-b-2 border-slate-900 pb-2 mb-4">
+        <h2 class="text-xl font-black text-slate-900">■ 하이테크안전팀 현장 점검 일지 (계약사항 및 법정선임)</h2>
+        <p class="text-xs text-slate-600">현장명: 청주 SK하이닉스 P&T7 신축 PJT System Ceiling 설치공사 (현장소장: 허수영 차장)</p>
+      </div>
 
-with tab3:
-    st.subheader("중대재해처벌법 핵심 7대 의무 점검")
-    st.dataframe(pd.DataFrame([
-        {"항목": "제1조: 안전보건 경영방침 수립", "이행률": "100%", "상태": "이행완료"},
-        {"항목": "제2조: 전담조직 및 전문인력 배치", "이행률": "100%", "상태": "이행완료"},
-        {"항목": "제3조: 안전보건 예산 편성 및 집행", "이행률": "95%", "상태": "정상집행"},
-        {"항목": "제4조: 위험성평가 및 개선조치", "이행률": "98%", "상태": "이행완료"},
-        {"항목": "제5조: 종사자 의견 청취 및 개선", "이행률": "100%", "상태": "이행완료"},
-        {"항목": "제6조: 비상조치 매뉴얼 및 모의훈련", "이행률": "92%", "상태": "훈련진행"},
-        {"항목": "제7조: 도급·용역·위탁 안전보건 확보", "이행률": "96%", "상태": "양호"}
-    ]), use_container_width=True, hide_index=True)
+      <div class="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-sm text-blue-950">⚖️ 계약금액별 법정 선임의무 판정 결과</h3>
+          <span class="px-2.5 py-1 bg-emerald-600 text-white font-bold text-xs rounded-full">법적의무 충족 완료</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div class="bg-white p-2.5 rounded border border-blue-100">
+            <span class="text-slate-500 block">계약금액(VAT포함)</span>
+            <span class="font-bold text-slate-900 text-sm">5,840,000,000원 (58.4억)</span>
+            <span class="text-[11px] text-blue-600 block mt-0.5">기준: 50억원 이상 건설공사</span>
+          </div>
+          <div class="bg-white p-2.5 rounded border border-blue-100">
+            <span class="text-slate-500 block">안전보건관리책임자 (현장소장)</span>
+            <span class="font-bold text-emerald-700 text-sm">허수영 차장 (선임완료)</span>
+            <span class="text-[11px] text-slate-500 block mt-0.5">산안법 제15조 선임의무 대상</span>
+          </div>
+          <div class="bg-white p-2.5 rounded border border-blue-100">
+            <span class="text-slate-500 block">전담 안전관리자 선임 여부</span>
+            <span class="font-bold text-emerald-700 text-sm">선임 완료 (상주 배치)</span>
+            <span class="text-[11px] text-slate-500 block mt-0.5">산안법 시행령 제16조 충족</span>
+          </div>
+        </div>
+      </div>
 
-with tab4:
-    st.subheader("신규 아차사고(Near Miss) 등록")
-    with st.form("form_report", clear_on_submit=True):
-        site = st.selectbox("사업장", ["울산 제1공장", "여수 플랜트", "평택 물류센터", "본사 연구소"])
-        htype = st.selectbox("유형", ["끼임/협착", "추락(위험)", "넘어짐", "낙하물", "충돌", "기타"])
-        content = st.text_input("위험 상황 설명")
-        action = st.text_input("조치 내용")
-        if st.form_submit_button("등록"):
-            new_r = {"ID": f"NM-2026-{len(st.session_state.recent_logs)+101}", "날짜": str(date.today()), "사업장": site, "유형": htype, "내용": content, "조치상태": "조치완료" if action else "조치중"}
-            st.session_state.recent_logs = pd.concat([pd.DataFrame([new_r]), st.session_state.recent_logs], ignore_index=True)
-            st.success("등록 완료되었습니다!")
-    st.dataframe(st.session_state.recent_logs, use_container_width=True, hide_index=True)
-`;
-      stlite.mount({ requirements: ["pandas", "numpy", "plotly"], entrypoint: "app.py", files: { "app.py": pythonScript } }, document.getElementById("root"));
-    </script>
-  </body>
+      <div class="table-responsive">
+        <table class="excel-table">
+          <colgroup><col style="width: 16%;"><col style="width: 34%;"><col style="width: 16%;"><col style="width: 34%;"></colgroup>
+          <tbody>
+            <tr><td class="excel-th">발주처</td><td>SK 하이닉스</td><td class="excel-th">원사업자</td><td>SK 에코플랜트</td></tr>
+            <tr><td class="excel-th">수급사업자</td><td class="font-bold text-blue-900">㈜신성이엔지</td><td class="excel-th">하도급공사명</td><td>P&T7 신축 PJT System Ceiling 설치공사</td></tr>
+            <tr><td class="excel-th">공사기간</td><td>2026.07.27 ~ 2027.06.30</td><td class="excel-th">주공정</td><td>System Ceiling</td></tr>
+            <tr><td class="excel-th">계약금액(VAT 포함)</td><td class="font-bold text-slate-900">5,840,000,000원</td><td class="excel-th">안전관리비</td><td>146,000,000원</td></tr>
+            <tr><td class="excel-th">협력사명</td><td>에이스크린텍 / 제이에스엠이엔지</td><td class="excel-th">현장명(계약번호)</td><td>P&T7 신축 PJT (2026-5-1251)</td></tr>
+            <tr><td class="excel-th">금일 작업 내용</td><td colspan="3">매립 INSERT 설치 (4%) ※ M16 BOLT·SQ-PIPE·FFU 미착수</td></tr>
+            <tr><td class="excel-th">출력인원</td><td colspan="3">총 12명 (관리자 7명 / 근로자 5명)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SHEET 3: 위험성평가 이행점검표 -->
+    <div id="sheet3" class="sheet-view hidden bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div class="border-b-2 border-slate-900 pb-2 mb-3">
+        <h2 class="text-xl font-black text-slate-900">위험성평가 이행점검표</h2>
+        <p class="text-xs text-slate-600">현장에서 도출된 위험성평가 항목을 바탕으로 실제 현장 이행 상태를 대조 점검한 결과입니다.</p>
+      </div>
+
+      <div class="table-responsive mb-4">
+        <table class="excel-table">
+          <thead>
+            <tr class="excel-th">
+              <th>장소</th><th>유해·위험 장소</th><th>유해·위험 요인</th><th>위험수준</th><th>개선대책</th><th>이행결과</th><th>재해유형</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공·INSERT<br>(DECK 단부)</td><td><b>[추락]</b> 단부 작업 시 생명줄 미체결로 추락 위험 <span class="text-blue-700">[근로자-김창수]</span></td><td class="text-center font-bold text-rose-600">상 (■)</td><td>단부 작업 시 생명줄에 2중 안전고리 체결 확인</td><td class="text-center font-bold text-emerald-600">이행 완료 (■)</td><td class="text-center font-bold text-rose-700 bg-rose-50">추락</td></tr>
+            <tr><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공작업<br>(DECK 하부)</td><td><b>[낙하]</b> 하부 작업구역 출입 상태에서 타공 시 공구·잔재물 낙하 충돌</td><td class="text-center font-bold text-rose-600">상 (■)</td><td>하부 작업구획 설정 및 유도원 배치, 동시작업 금지</td><td class="text-center font-bold text-emerald-600">이행 완료 (■)</td><td class="text-center font-bold text-rose-700 bg-rose-50">낙하</td></tr>
+            <tr class="bg-amber-50/50"><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공작업</td><td><b>[비래]</b> 드릴 비트 파손 또는 콘크리트 파편 비산 안구 부상</td><td class="text-center font-bold text-amber-600">중 (■)</td><td>드릴 점검, 보안경·안전장갑 착용 확인</td><td class="text-center font-bold text-amber-600">개선 필요 (■)</td><td class="text-center font-bold text-amber-700 bg-amber-50">비래</td></tr>
+            <tr><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공작업<br>(홀소 절단면)</td><td><b>[베임]</b> 타공 후 절단 조각 제거 시 절단면에 손 베임 <span class="text-blue-700">[근로자-오재명]</span></td><td class="text-center font-bold text-amber-600">중 (■)</td><td>절단면 맨손 접촉 금지, 자상방지장갑 착용</td><td class="text-center font-bold text-emerald-600">이행 완료 (■)</td><td class="text-center font-medium">베임</td></tr>
+            <tr><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공작업<br>(분진)</td><td><b>[건강장해]</b> 콘크리트·철분 분진 흡입 및 바닥 퇴적 미끄러짐</td><td class="text-center font-bold text-emerald-600">하 (■)</td><td>방진마스크 착용, 분진구역 출입통제 및 청소</td><td class="text-center font-bold text-emerald-600">이행 완료 (■)</td><td class="text-center font-medium">건강장해</td></tr>
+            <tr><td class="text-center font-medium">10월 20일</td><td class="font-medium">타공작업<br>(진동)</td><td><b>[건강장해]</b> 장시간 드릴 진동 및 쪼그림 자세 근골격계 부담 <span class="text-blue-700">[근로자-최범수]</span></td><td class="text-center font-bold text-emerald-600">하 (■)</td><td>연속 작업시간 제한, 주기적 휴식, 진동방지장갑</td><td class="text-center font-bold text-emerald-600">이행 완료 (■)</td><td class="text-center font-medium">건강장해</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SHEET 4: WORK STOP NOTICE -->
+    <div id="sheet4" class="sheet-view hidden bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div id="workStopBanner" class="border-4 border-rose-600 p-4 mb-4 rounded-lg bg-rose-50 text-center">
+        <h2 class="text-2xl font-black text-rose-700 tracking-wider">WORK STOP NOTICE</h2>
+        <p class="text-xs font-bold text-rose-900 mt-1">"위험을 발견하면 멈추고, 확인하고, 개선하고, 다시 시작합니다"</p>
+      </div>
+
+      <div class="mb-4">
+        <div class="text-xs font-bold text-slate-800 mb-1">WORK STOP 개선 요구사항</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          <div class="p-2 border border-slate-300 rounded bg-slate-50"><b>① 단부 추락 방지</b>: 생명줄 미체결 구역 작업 즉시 중지 및 2중 고리 교차체결 확인</div>
+          <div class="p-2 border border-slate-300 rounded bg-slate-50"><b>② 하부 낙하물 방지</b>: DECK 타공 하부 작업구획 안전테이프 설치 및 유도자 배치</div>
+          <div class="p-2 border border-slate-300 rounded bg-slate-50"><b>③ 보안경 착용</b>: 드릴 타공 시 비산 파편 대비 보안경 미착용자 전원 착용 후 투입</div>
+          <div class="p-2 border border-slate-300 rounded bg-slate-50"><b>④ 자상 방지</b>: 홀소 절단 조각 맨손 제거 절대 금지, 방호장갑 지급 상태 점검</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEET 5: 현장 개선조치 전·후 대조표 -->
+    <div id="sheet5" class="sheet-view hidden bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div class="border-b-2 border-slate-900 pb-2 mb-4">
+        <h2 class="text-xl font-black text-slate-900">현장 개선조치 전·후 대조표</h2>
+        <p class="text-xs text-slate-600">㈜신성이엔지 하이테크안전팀 · 월간 공사PJT 현장점검 개선 결과</p>
+      </div>
+
+      <div class="border border-slate-300 rounded-lg p-3 bg-white">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-2 pb-2 border-b border-slate-200">
+          <div><span class="text-slate-500">현장명:</span> <b>청주 P&T7 System Ceiling</b></div>
+          <div><span class="text-slate-500">점검자:</span> <b>김장성 이사, 이경희 대리</b></div>
+          <div><span class="text-slate-500">현장소장:</span> <b>허수영 차장</b></div>
+          <div><span class="text-slate-500">점검일:</span> <b>26.10.20 (즉시 시정)</b></div>
+        </div>
+        <div class="text-xs mb-2">
+          <p><b>위험요인:</b> 단부·DECK 상부 작업 중 안전대 안전고리를 교차체결하지 않아 추락 위험</p>
+          <p class="text-blue-800"><b>개선방향:</b> 생명줄·구조물에 안전고리 2개 교차체결 후 작업, 작업 전 체결 상태 확인</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-center text-xs">
+          <div class="p-2 bg-slate-50 border border-slate-200 rounded">
+            <span class="font-bold text-rose-700 block mb-1">개선 전 (안전고리 1개만 체결 / 단부 노출)</span>
+            <div class="h-28 bg-slate-200 rounded flex items-center justify-center text-slate-500 text-xs">[사진: 단부 작업 시 안전고리 미흡 사진 첨부]</div>
+          </div>
+          <div class="p-2 bg-slate-50 border border-slate-200 rounded">
+            <span class="font-bold text-emerald-700 block mb-1">개선 후 (즉시 시정 - 2중 안전고리 교차체결)</span>
+            <div class="h-28 bg-emerald-50 border border-emerald-200 rounded flex items-center justify-center text-emerald-700 text-xs font-semibold">[사진: 안전고리 2개소 교차 체결 완료 사진]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEET 6: 현장 개선제안 우수사례 -->
+    <div id="sheet6" class="sheet-view hidden bg-white border border-slate-300 rounded-xl shadow p-4 md:p-6 mb-6">
+      <div class="border-b-2 border-slate-900 pb-2 mb-4">
+        <h2 class="text-xl font-black text-slate-900">현장 개선제안 우수사례 관리대장</h2>
+        <p class="text-xs text-slate-600">㈜신성이엔지 하이테크안전팀 · 현장점검 지적사항 개선제안 및 전사 공유</p>
+      </div>
+
+      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+          <span class="font-bold text-xs text-blue-900">제안 No.1 (청주 P&T7 System Ceiling)</span>
+          <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold text-[10px]">공정 개선</span>
+        </div>
+        <div class="text-xs space-y-1 text-slate-800">
+          <p><b>지적/제안 일자:</b> 2026.10.20</p>
+          <p><b>개선제안 내용:</b> DECK 매립 INSERT 타공 시 분진 포집형 드릴 흡진 커버 일체형 키트 도입 제안</p>
+          <p><b>기대효과:</b> 콘크리트 분진 비산 90% 이상 억제, 안구 이물 유입 차단, 청소 시간 단축</p>
+          <p><b>제안자 / 우선순위:</b> 하이테크안전팀 / 최우선 적용</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="no-print max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 pt-6">
+    🛡️ <b>㈜신성이엔지 하이테크안전팀 통합 안전관리 시스템</b> | 중대재해처벌법 및 산업안전보건법 준수<br>
+    30개 현장 가변 점검주기 트래킹 및 엑셀 6대 시트 규격 지원 (모바일/태블릿/PC & A4 인쇄 최적화)
+  </footer>
+
+  <script>
+    function switchTab(sheetId) {
+      document.querySelectorAll('.sheet-view').forEach(view => view.classList.add('hidden'));
+      document.querySelectorAll('.sheet-tab-btn').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
+      });
+      const targetSheet = document.getElementById(sheetId);
+      if (targetSheet) targetSheet.classList.remove('hidden');
+      const targetBtn = document.getElementById('tab-btn-' + sheetId);
+      if (targetBtn) {
+        targetBtn.classList.remove('border-transparent', 'text-slate-500');
+        targetBtn.classList.add('border-blue-600', 'text-blue-600');
+      }
+    }
+
+    function showAllForPrint() {
+      document.querySelectorAll('.sheet-view').forEach(view => {
+        view.classList.remove('hidden');
+        view.classList.add('page-break');
+      });
+      alert('모든 시트가 활성화되었습니다. [A4 인쇄] 버튼을 누르면 6개 시트가 차례대로 분할 출력됩니다.');
+    }
+
+    const siteDataMap = {
+      site_01: { name: "청주 SK하이닉스 P&T7 System Ceiling", cycle: "2개월 1회 (1차 완료)", dday: "D-18일", rate: 83.3, legal: "선임완료 (적합)" },
+      site_02: { name: "이천 SK하이닉스 M16 클린룸 배관공사", cycle: "월 1회", dday: "D-5일", rate: 91.2, legal: "선임완료 (적합)" },
+      site_03: { name: "평택 삼성전자 P3 FAB 닥트설치공사", cycle: "주 1회 (고위험 집중)", dday: "D-2일", rate: 95.0, legal: "전담 2명 선임완료 (최우수)" }
+    };
+
+    function changeSite(siteKey) {
+      const data = siteDataMap[siteKey] || {
+        name: document.getElementById('siteSelect').selectedOptions[0].text,
+        cycle: "2개월 1회 (정기점검)",
+        dday: "D-20일",
+        rate: 85.0,
+        legal: "선임완료 (적합)"
+      };
+      document.getElementById('summarySiteName').innerText = data.name;
+      document.getElementById('s1_header_sub').innerText = data.name + " 설치공사";
+      document.getElementById('summaryCycle').innerText = data.cycle;
+      document.getElementById('summaryRateText').innerText = data.rate + "%";
+      document.getElementById('summaryRateBar').style.width = data.rate + "%";
+      document.getElementById('summaryLegalStatus').innerText = "✓ 계약금액 기준 " + data.legal;
+    }
+
+    let isWorkStopActive = false;
+    function toggleWorkStop() {
+      isWorkStopActive = !isWorkStopActive;
+      const banner = document.getElementById('workStopBanner');
+      const btn = document.getElementById('btnWorkStopToggle');
+      if (isWorkStopActive) {
+        banner.className = "border-4 border-rose-600 p-4 mb-4 rounded-lg bg-rose-600 text-white text-center animate-pulse";
+        btn.innerHTML = "<span>🛑</span> <span>Work Stop 해제하기</span>";
+        btn.className = "bg-rose-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow ring-2 ring-rose-400";
+        alert('[긴급 알림] 현장에 WORK STOP (작업중지)이 공식 발령되었습니다.');
+      } else {
+        banner.className = "border-4 border-rose-600 p-4 mb-4 rounded-lg bg-rose-50 text-center";
+        btn.innerHTML = "<span>🚨</span> <span>Work Stop 상태 관리</span>";
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition";
+        alert('[해제 알림] 시정조치 확인 완료로 WORK STOP이 정상 해제되었습니다.');
+      }
+    }
+  </script>
+</body>
 </html>
