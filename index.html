@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>🛡️ 산업안전보건 통합 관제 대시보드</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.58.0/build/stlite.css" />
+    <style>
+      body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      #root { height: 100vh; }
+      .loading-splash { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; color: #334155; }
+      .spinner { width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading-splash">
+        <div class="spinner"></div>
+        <h3 style="margin: 0 0 8px 0; font-size: 1.2rem; font-weight: 700;">산업안전보건 파이썬 대시보드 로딩 중...</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: #64748b;">WebAssembly 파이썬 엔진을 브라우저에서 실행하고 있습니다.</p>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.58.0/build/stlite.js"></script>
+    <script>
+      const pythonScript = `import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, date
+
+st.set_page_config(page_title="산업안전보건 통합 관제 대시보드", page_icon="🛡️", layout="wide")
+
+st.markdown("""
+<style>
+    .main-title { font-size: 2.1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.2rem; }
+    .sub-title { font-size: 0.95rem; color: #64748b; margin-bottom: 1.5rem; }
+    .metric-card { background: #ffffff; border-radius: 12px; padding: 1.2rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .metric-title { font-size: 0.82rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.4rem; }
+    .metric-value { font-size: 1.85rem; font-weight: 800; color: #0f172a; line-height: 1.2; }
+    .metric-sub { font-size: 0.8rem; color: #10b981; font-weight: 600; margin-top: 0.3rem; }
+</style>
+""", unsafe_allow_html=True)
+
+if "monthly_stats" not in st.session_state:
+    months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월"]
+    st.session_state.monthly_stats = pd.DataFrame({
+        "월": months,
+        "중대재해": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "경미사고(공상)": [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+        "아차사고(Near Miss)": [12, 14, 18, 15, 21, 19, 23, 20, 18, 16]
+    })
+
+if "recent_logs" not in st.session_state:
+    st.session_state.recent_logs = pd.DataFrame([
+        {"ID": "NM-2026-102", "날짜": "2026-10-24", "사업장": "울산 제1공장", "유형": "추락(위험)", "내용": "2층 배관 보수 작업 중 안전대 미체결 인지 후 즉시 교육", "조치상태": "조치완료"},
+        {"ID": "NM-2026-098", "날짜": "2026-10-18", "사업장": "평택 물류센터", "유형": "끼임/협착", "내용": "컨베이어 방호망 탈락 발견 및 인터록 점검", "조치상태": "조치완료"},
+        {"ID": "AC-2026-002", "날짜": "2026-05-11", "사업장": "여수 플랜트", "유형": "넘어짐/전도", "내용": "바닥 세척수 잔류로 인한 미끄러짐 (발목 염좌 치료)", "조치상태": "조치완료"}
+    ])
+
+with st.sidebar:
+    st.title("안전보건 관제센터")
+    selected_site = st.selectbox("🏢 대상 사업장", ["전체 사업장", "울산 제1제조공장", "여수 석유화학플랜트", "평택 스마트물류센터", "본사 연구소"])
+    st.markdown("---")
+    st.markdown("### 🎯 무재해 목표")
+    st.progress(348 / 500)
+    st.caption("현재 **348일 달성** / 목표 500일 (D-152)")
+
+st.markdown('<div class="main-title">🛡️ 전사 산업안전보건 종합 관제 대시보드</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="sub-title">조회기준: <b>{selected_site}</b> | 중대재해처벌법 및 산업안전보건법 준수 모니터링</div>', unsafe_allow_html=True)
+
+col1, col2, col3, col4, col5 = st.columns(5)
+with col1:
+    st.markdown('<div class="metric-card"><div class="metric-title">무재해 달성 일수</div><div class="metric-value">348일</div><div class="metric-sub">목표 500일 (D-152)</div></div>', unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="metric-card"><div class="metric-title">중대재해 건수</div><div class="metric-value" style="color: #10b981;">0건</div><div class="metric-sub">Zero 지속 유지</div></div>', unsafe_allow_html=True)
+with col3:
+    st.markdown('<div class="metric-card"><div class="metric-title">경미사고(공상)</div><div class="metric-value">2건</div><div class="metric-sub">전년비 ▼ 60%</div></div>', unsafe_allow_html=True)
+with col4:
+    st.markdown('<div class="metric-card"><div class="metric-title">아차사고 발굴</div><div class="metric-value" style="color: #3b82f6;">176건</div><div class="metric-sub">보고율 ▲ 38%</div></div>', unsafe_allow_html=True)
+with col5:
+    st.markdown('<div class="metric-card"><div class="metric-title">시정조치 완료율</div><div class="metric-value">97.8%</div><div class="metric-sub">296/303건 완료</div></div>', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+tab1, tab2, tab3, tab4 = st.tabs(["📊 안전 통계 분석", "⚠️ 위험성평가 5×5", "⚖️ 중대재해처벌법 준수", "✍️ 아차사고 신규 등록"])
+
+with tab1:
+    c1, c2 = st.columns([7, 5])
+    with c1:
+        st.subheader("월별 사고 및 아차사고 발굴 추이")
+        df_m = st.session_state.monthly_stats
+        fig_t = go.Figure()
+        fig_t.add_trace(go.Bar(x=df_m["월"], y=df_m["아차사고(Near Miss)"], name="아차사고 발굴", marker_color="#60a5fa"))
+        fig_t.add_trace(go.Scatter(x=df_m["월"], y=df_m["경미사고(공상)"], name="경미사고", mode="lines+markers", line=dict(color="#f43f5e", width=3)))
+        fig_t.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10))
+        st.plotly_chart(fig_t, use_container_width=True)
+    with c2:
+        st.subheader("위험 유형별 비율")
+        haz_df = pd.DataFrame({"유형": ["끼임/협착", "추락", "넘어짐", "낙하물", "충돌", "기타"], "건수": [42, 38, 31, 28, 19, 18]})
+        fig_d = px.pie(haz_df, values="건수", names="유형", hole=0.55)
+        fig_d.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10))
+        st.plotly_chart(fig_d, use_container_width=True)
+
+with tab2:
+    st.subheader("위험성평가 (5×5 Matrix)")
+    m_data = np.zeros((5, 5))
+    for r in range(5):
+        for c in range(5):
+            m_data[r, c] = (5 - r) * (c + 1)
+    fig_mat = px.imshow(m_data, x=["1(극소)", "2(경미)", "3(보통)", "4(중대)", "5(치명)"], y=["5(매우높음)", "4(높음)", "3(보통)", "2(낮음)", "1(매우낮음)"], labels=dict(x="강도", y="빈도"), color_continuous_scale=[(0.0, "#22c55e"), (0.28, "#facc15"), (0.60, "#ef4444"), (1.0, "#991b1b")], text_auto=True)
+    fig_mat.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20), coloraxis_showscale=False)
+    st.plotly_chart(fig_mat, use_container_width=True)
+
+with tab3:
+    st.subheader("중대재해처벌법 핵심 7대 의무 점검")
+    st.dataframe(pd.DataFrame([
+        {"항목": "제1조: 안전보건 경영방침 수립", "이행률": "100%", "상태": "이행완료"},
+        {"항목": "제2조: 전담조직 및 전문인력 배치", "이행률": "100%", "상태": "이행완료"},
+        {"항목": "제3조: 안전보건 예산 편성 및 집행", "이행률": "95%", "상태": "정상집행"},
+        {"항목": "제4조: 위험성평가 및 개선조치", "이행률": "98%", "상태": "이행완료"},
+        {"항목": "제5조: 종사자 의견 청취 및 개선", "이행률": "100%", "상태": "이행완료"},
+        {"항목": "제6조: 비상조치 매뉴얼 및 모의훈련", "이행률": "92%", "상태": "훈련진행"},
+        {"항목": "제7조: 도급·용역·위탁 안전보건 확보", "이행률": "96%", "상태": "양호"}
+    ]), use_container_width=True, hide_index=True)
+
+with tab4:
+    st.subheader("신규 아차사고(Near Miss) 등록")
+    with st.form("form_report", clear_on_submit=True):
+        site = st.selectbox("사업장", ["울산 제1공장", "여수 플랜트", "평택 물류센터", "본사 연구소"])
+        htype = st.selectbox("유형", ["끼임/협착", "추락(위험)", "넘어짐", "낙하물", "충돌", "기타"])
+        content = st.text_input("위험 상황 설명")
+        action = st.text_input("조치 내용")
+        if st.form_submit_button("등록"):
+            new_r = {"ID": f"NM-2026-{len(st.session_state.recent_logs)+101}", "날짜": str(date.today()), "사업장": site, "유형": htype, "내용": content, "조치상태": "조치완료" if action else "조치중"}
+            st.session_state.recent_logs = pd.concat([pd.DataFrame([new_r]), st.session_state.recent_logs], ignore_index=True)
+            st.success("등록 완료되었습니다!")
+    st.dataframe(st.session_state.recent_logs, use_container_width=True, hide_index=True)
+`;
+      stlite.mount({ requirements: ["pandas", "numpy", "plotly"], entrypoint: "app.py", files: { "app.py": pythonScript } }, document.getElementById("root"));
+    </script>
+  </body>
+</html>
